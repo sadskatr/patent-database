@@ -1,0 +1,42 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE files
+.idea/
+.vscode/
+.cursor/
+
+# Environment variables and local config
+.env
+*.env
+
+# Logs
+*.log
+
+# Temporary files
+*.swp
+*.swo
+.DS_Store
+
+# Generated files
+*.json
+/patent_results_*.json
+
+# Downloaded files in static
+/patent_database/static/downloads/
+
+# Docker
+Dockerfile
+docker-compose.yml
