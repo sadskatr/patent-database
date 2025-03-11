@@ -1,0 +1,80 @@
+/* General styling for the patent database tool */
+
+/* Custom scrollbars for pre elements */
+pre {
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #dee2e6;
+}
+
+/* Debug panel styling */
+#debugOutput {
+    font-family: 'Courier New', monospace;
+    white-space: pre-wrap;
+}
+
+/* Results table styling */
+#resultsTable {
+    font-size: 0.9rem;
+}
+
+#resultsTable th {
+    position: sticky;
+    top: 0;
+    background-color: #f8f9fa;
+    z-index: 1;
+}
+
+/* Form controls */
+.form-label {
+    font-weight: 500;
+}
+
+/* Search type fields container */
+.search-type-fields {
+    padding: 15px;
+    border: 1px solid #dee2e6;
+    border-radius: 5px;
+    background-color: #f8f9fa;
+    margin-bottom: 15px;
+}
+
+/* Add spacing for boolean search terms */
+.boolean-term-row:not(:first-child) {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #dee2e6;
+}
+
+/* Highlight active page */
+.page-item.active .page-link {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+/* Loading spinner */
+.loading-spinner {
+    display: inline-block;
+    width: 1rem;
+    height: 1rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 1s ease-in-out infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.8rem;
+    }
+}
