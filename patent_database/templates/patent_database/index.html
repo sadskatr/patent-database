@@ -1,0 +1,228 @@
+{% extends "base.html" %}
+{% block title %}{{ tool_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>{{ tool_name }}</h2>
+    <p class="lead">Search for patents using the USPTO Open Data Portal API</p>
+    
+    <!-- Debug Panel -->
+    <div id="debugPanel" class="card mb-4 d-none">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Debug Panel</h5>
+            <button class="btn btn-sm btn-outline-light" id="clearDebugBtn">Clear</button>
+        </div>
+        <div class="card-body bg-dark text-light">
+            <pre id="debugOutput" style="max-height: 300px; overflow-y: auto; font-size: 0.8rem;"></pre>
+            <div id="apiResponseContent" class="mt-3"></div>
+        </div>
+    </div>
+    
+    <!-- Search Parameters Form -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Search Parameters</h5>
+        </div>
+        <div class="card-body">
+            <form id="searchForm">
+                <!-- Search Type Selection -->
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label for="searchType" class="form-label">Search Type</label>
+                        <select class="form-select" id="searchType" name="searchType" required>
+                            {% for type in search_types %}
+                            <option value="{{ type }}">{{ type|replace('_', ' ')|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Simple Search Fields (default view) -->
+                <div id="simpleSearchFields" class="search-type-fields">
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="simpleTerm" class="form-label">Search Term</label>
+                            <input type="text" class="form-control" id="simpleTerm" name="simpleTerm" placeholder="Enter search term">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Date Range (optional for all search types) -->
+                <div class="row mb-3 mt-4">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enableDateRange">
+                            <label class="form-check-label" for="enableDateRange">Filter by Filing Date Range</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="dateRangeFields" class="row mb-3 d-none">
+                    <div class="col-md-6">
+                        <label for="dateFrom" class="form-label">From Date</label>
+                        <input type="date" class="form-control" id="dateFrom" name="dateFrom">
+                    </div>
+                    <div class="col-md-6">
+                        <label for="dateTo" class="form-label">To Date</label>
+                        <input type="date" class="form-control" id="dateTo" name="dateTo">
+                    </div>
+                </div>
+                
+                <!-- Pagination and Sorting -->
+                <div class="row mb-3 mt-4">
+                    <div class="col-md-6">
+                        <label for="resultsPerPage" class="form-label">Results Per Page</label>
+                        <select class="form-select" id="resultsPerPage" name="resultsPerPage">
+                            <option value="10">10</option>
+                            <option value="25">25</option>
+                            <option value="50" selected>50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="sortField" class="form-label">Sort By</label>
+                        <select class="form-select" id="sortField" name="sortField">
+                            <option value="applicationMetaData.filingDate" selected>Filing Date</option>
+                            <option value="inventionTitle">Invention Title</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Debug Options -->
+                <div class="row mb-3 mt-4">
+                    <div class="col-12">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enableDebug">
+                            <label class="form-check-label" for="enableDebug">Enable Debug Mode</label>
+                        </div>
+                    </div>
+                    <div class="col-12 mt-2">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="showQueryPreview">
+                            <label class="form-check-label" for="showQueryPreview">Show Query Preview</label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Search Buttons -->
+                <div class="d-flex justify-content-between mt-4">
+                    <button type="button" class="btn btn-secondary" id="resetBtn">Reset</button>
+                    <div>
+                        <button type="button" class="btn btn-info me-2" id="testConnectionBtn">Test API Connection</button>
+                        <button type="submit" class="btn btn-primary" id="searchBtn">Search</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Query Preview Panel -->
+    <div id="queryPreviewPanel" class="card mb-4 d-none">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Query Preview</h5>
+        </div>
+        <div class="card-body">
+            <pre id="queryPreviewContent" class="mb-0" style="max-height: 300px; overflow-y: auto;"></pre>
+        </div>
+    </div>
+    
+    <!-- Results Section -->
+    <div id="resultsSection" class="card mb-4 d-none">
+        <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">Search Results</h5>
+            <button class="btn btn-outline-light btn-sm" id="exportCsvBtn" disabled>Export to CSV</button>
+        </div>
+        <div class="card-body">
+            <div id="resultsMetadata" class="alert alert-info mb-3"></div>
+            <div class="table-responsive">
+                <table class="table table-striped table-hover" id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Application #</th>
+                            <th>Filing Date</th>
+                            <th>Inventor</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsTableBody">
+                        <!-- Results will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination Controls -->
+            <div id="paginationControls" class="d-flex justify-content-between align-items-center mt-3 d-none">
+                <div>
+                    <span id="paginationInfo">Showing results 1-50 of 100</span>
+                </div>
+                <nav>
+                    <ul class="pagination mb-0">
+                        <li class="page-item disabled">
+                            <a class="page-link" href="#" id="prevPageBtn">&laquo; Previous</a>
+                        </li>
+                        <li class="page-item">
+                            <a class="page-link" href="#" id="nextPageBtn">Next &raquo;</a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// This is a simplified version. The actual implementation would be much more complex.
+document.addEventListener('DOMContentLoaded', function() {
+    const searchForm = document.getElementById('searchForm');
+    const searchTypeSelect = document.getElementById('searchType');
+    const enableDebugCheckbox = document.getElementById('enableDebug');
+    const debugPanel = document.getElementById('debugPanel');
+    const searchBtn = document.getElementById('searchBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const resultsSection = document.getElementById('resultsSection');
+    
+    // Enable debug mode when checkbox is checked
+    enableDebugCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            debugPanel.classList.remove('d-none');
+        } else {
+            debugPanel.classList.add('d-none');
+        }
+    });
+    
+    // Handle search form submission
+    searchForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        // Show loading state
+        searchBtn.disabled = true;
+        searchBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Searching...';
+        
+        // In a real implementation, you would:
+        // 1. Collect form data
+        // 2. Construct API payload
+        // 3. Make API request
+        // 4. Process and display results
+        
+        // Simulate API call
+        setTimeout(function() {
+            // Show results section (would normally be done after successful API response)
+            resultsSection.classList.remove('d-none');
+            
+            // Reset button state
+            searchBtn.disabled = false;
+            searchBtn.innerHTML = 'Search';
+        }, 1000);
+    });
+    
+    // Reset the form
+    resetBtn.addEventListener('click', function() {
+        searchForm.reset();
+        resultsSection.classList.add('d-none');
+    });
+});
+</script>
+{% endblock %}
